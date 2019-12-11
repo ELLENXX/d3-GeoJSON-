@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>中国地图</title>
+		<script src="http://d3js.org/d3.v3.min.js"></script>
+	</head>
+	<style>
+		.fangkuang{
+			width: 100px;
+			height: 100px;
+			padding: 5px;
+			
+			opacity: 0.6;
+			border:1px solid #fff;
+			border-radius: 5px;
+			
+		}
+		#fangkuang1{
+			pointer-events: none;
+		}
+		#fangkuang2{
+			pointer-events: none;
+		}
+		
+	</style>
+	<body>
+		<svg></svg>
+	</body>
+	<script>
+		
+		var width = 960, height = 700;
+		//1.定义投影和生成器
+		//定义地图投影
+		var projection=d3.geo.mercator()
+		.center([107,31]) //地图中心位置,107是经度，31是纬度
+		.scale(600) //设置缩放量
+		.translate([width/2,height/2]); // 设置平移量
+		
+		//定义地理路径生成器,使每一个坐标都会先调用此投影,才产生路径值
+		var path=d3.geo.path()
+		.projection(projection);// 设定投影
+		
+		//3.请求china.geo.json数据,添加<path>,每个path用于绘制一个省的路径
+		/**
+		 * 获取鼠标位置
+		 * @param {Object} e 当前的元素对象
+		 */
+		function mouseXY(e){
+			var e=e||window.event;
+			return { "x": e.offsetX, "y": e.offsetY };
+		}
+		
+		/**
+		 * 删除文字和方框
+		 */
+		function fangkuangRemove()
+		{
+			d3.select("#fangkuang1").remove();
+			d3.select("#fangkuang2").remove();
+		}
+		/**
+		 * 创建方框和框内文字
+		 * @param {Object} svg 
+		 * @param {Object} d
+		 */
+		function createFangkuang(svg,d)
+		{
+			
+			let XY=mouseXY(event);
+			svg.append("rect")
+			        .attr("id", "fangkuang1")
+			        .attr("x", XY.x)
+			        .attr("y",XY.y)
+					.attr("class","fangkuang")
+			//创建显示tooltip文本
+			svg.append("text")
+			        .attr("id", "fangkuang2")
+			        .attr("x", XY.x+40)
+			        .attr("y",XY.y+20)
+			        .attr("text-anchor", "middle")
+			        .attr("font-family", "sans-serif")
+			        .attr("font-size", "14px")
+			        .attr("font-weight", "bold")
+			        .attr("fill", "#fff")
+			        .text(d.properties.name);
+		}
+		//请求china.geo.json
+		d3.json("http://localhost/china.geo.json",function(err,root){
+			if(err){
+				alert('数据请求失败');
+			}
+			console.log(root);
+			//创建svg
+			var svg = d3.select("body")
+			        .append("svg")
+			        .attr("width", width)
+			        .attr("height", height);
+					
+			var groups=svg.append("g");
+			
+			groups.selectAll("path")
+			.data(root.features) // 绑定数据
+			.enter()
+			.append("path")
+			.on('mouseover',function(d,i){
+				d3.select(this)
+				.style('fill','#2CD8FF');
+				console.log('ss');
+				createFangkuang(svg,d);				
+			})
+			.on('mousemove',function(d,i){
+				fangkuangRemove();
+				createFangkuang(svg,d);
+			})
+			.on('mouseout',function(d,i){
+				d3.select(this)
+				.style('fill', '#404466');
+				fangkuangRemove();
+			})
+			.style("fill",'#404466')//填充内部颜色
+			.attr("d",path)//使用路径生成器
+			
+		})
+	</script>
+</html>
